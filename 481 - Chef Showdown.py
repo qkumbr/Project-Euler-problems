@@ -5,7 +5,7 @@ from decimal import Decimal
 from multiprocessing import Pool
 import copy
 
-probability_matrix = []
+
 showdowns = [0]
 
 def increase_showdowns():
@@ -168,12 +168,10 @@ def showdown(chefs, accumulated_probability, num_losses, r, p, probability_matri
 if __name__ == '__main__':
     numchefs = input("number of chefs? ")
     probabilities = []
-    var = 0
+    probability_matrix = []
     for i in range(1, numchefs + 1):
-        var = fib(i)/fib(numchefs + 1)
-        var = '%.8f' % round(var,8)
-        newvar = Decimal(var)
-        probabilities.append(newvar)
+        #round the fibonacci math to 8 decimal points and add it to the array
+        probabilities.append(Decimal('%.8f' % round(fib(i)/fib(numchefs + 1),8)))
     chefs = build_chef_list(probabilities)
     probability_matrix = build_probability_matrix(probability_matrix, numchefs)
     print "starting showdown"
@@ -183,27 +181,23 @@ if __name__ == '__main__':
     print "BATTLE START"
     #probability_matrix = showdown(chefs, 1, 0, numchefs, probability_of_all_remaining_chefs_losing(chefs), probability_matrix)
     what_you_started_with = copy.deepcopy(chefs)
-    winresult = copy.deepcopy(probability_matrix)
-    loseresult = copy.deepcopy(probability_matrix)
+
+    #start multi-threading
     pool = Pool(processes=2) 
     if chefs[0][1] > 0: #chef can't win if their probability is 0
         winresult = pool.apply_async(win,(chefs, ((1 * chefs[0][1]) / (1 - probability_of_all_remaining_chefs_losing(chefs))), numchefs, probability_of_all_remaining_chefs_losing(chefs), probability_matrix))
-            #win(chefs, ((accumulated_probability * chefs[0][1]) / (1 - prob_of_all_losses)), remaining_chefs, prob_of_all_losses)
-            #print "chefs after calling win function are: ", chefs
-        #probability_matrix += winresult.get(timeout=1000000)
         chefs = what_you_started_with
     if chefs[0][1] < 1: # chef can't lose if their probability is 1
-        #print "calling lose function with: ", chefs    
         loseresult = pool.apply_async(lose, (chefs, 1 * (1 - chefs[0][1]), 1, numchefs, probability_of_all_remaining_chefs_losing(chefs), probability_matrix))
-        #probability_matrix += loseresult.get(timeout=1000000)
     pool.close()
     pool.join()
+    #end multi-threading
 
     a = winresult.get(timeout=1000000)
     b = loseresult.get(timeout=1000000)
     probability_matrix = [a[i]+b[i] for i in xrange(len(probability_matrix))]
 
-    print "game over!",
+    print "game over!"
     #print "we started with chefs: ", chefs
     print "chefs' overall probability of winning are: "
     for i in range (0, numchefs):
